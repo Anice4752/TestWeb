@@ -103,9 +103,9 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
           },
           runningMode: "VIDEO",
           numHands: 2,
-          minHandDetectionConfidence: 0.3,
-          minHandPresenceConfidence: 0.3,
-          minTrackingConfidence: 0.3
+          minHandDetectionConfidence: 0.4,
+          minHandPresenceConfidence: 0.4,
+          minTrackingConfidence: 0.4
         });
         setIsLoading(false);
       } catch (err) {

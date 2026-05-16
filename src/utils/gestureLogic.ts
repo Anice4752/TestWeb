@@ -8,45 +8,52 @@ export const checkGesture = (landmarksList: any[][], gestureType: string): boole
   const getHandInfo = (hand: any[]) => {
     const wrist = hand[0];
     
-    // Precise extension check: Tip must be significantly further from wrist than PIP and MCP
-    const isExtended = (tipIdx: number, pipIdx: number, mcpIdx: number) => {
+    // Check extension for each finger using its 4 landmarks
+    // Tip (8/12/16/20), PIP (6/10/14/18), MCP (5/9/13/17)
+    const isFingerExtended = (tipIdx: number, dipIdx: number, pipIdx: number, mcpIdx: number) => {
       const tipDist = getDist(hand[tipIdx], wrist);
+      const dipDist = getDist(hand[dipIdx], wrist);
       const pipDist = getDist(hand[pipIdx], wrist);
       const mcpDist = getDist(hand[mcpIdx], wrist);
-      return tipDist > pipDist * 1.15 && tipDist > mcpDist * 1.3; 
+      
+      // Strict sequence: Tip must be furthest, followed by DIP, PIP, and MCP
+      return tipDist > dipDist && dipDist > pipDist && pipDist > mcpDist;
     };
 
-    const isFolded = (tipIdx: number, mcpIdx: number) => {
+    const isFingerFolded = (tipIdx: number, mcpIdx: number) => {
       const tipDist = getDist(hand[tipIdx], wrist);
       const mcpDist = getDist(hand[mcpIdx], wrist);
-      return tipDist < mcpDist * 1.1; // Tip is close to or inside the palm area
+      // Tip is significantly closer to the wrist than the base of the finger
+      return tipDist < mcpDist * 0.9;
     };
 
     const isThumbExtended = () => {
-      const thumbTip = hand[4];
-      const thumbMcp = hand[2];
-      const indexMcp = hand[5];
+      const tip = hand[4];
+      const ip = hand[3];
+      const mcp = hand[2];
+      const cmc = hand[1];
       
-      // Distance from wrist
-      const wristDist = getDist(thumbTip, wrist);
-      const mcpDist = getDist(thumbMcp, wrist);
+      const tipDist = getDist(tip, wrist);
+      const ipDist = getDist(ip, wrist);
+      const mcpDist = getDist(mcp, wrist);
       
-      // Spread from index finger
-      const spreadDist = getDist(thumbTip, indexMcp);
+      // Horizontal spread check (relative to index finger base)
+      const indexBase = hand[5];
+      const spread = getDist(tip, indexBase);
       
-      return (wristDist > mcpDist * 1.2) || (spreadDist > 0.1);
+      return (tipDist > ipDist && ipDist > mcpDist && mcpDist > getDist(cmc, wrist)) || spread > 0.12;
     };
 
     return {
-      indexExt: isExtended(8, 6, 5),
-      middleExt: isExtended(12, 10, 9),
-      ringExt: isExtended(16, 14, 13),
-      pinkyExt: isExtended(20, 18, 17),
-      indexFold: isFolded(8, 5),
-      middleFold: isFolded(12, 9),
-      ringFold: isFolded(16, 13),
-      pinkyFold: isFolded(20, 17),
-      thumbExt: isThumbExtended()
+      index: isFingerExtended(8, 7, 6, 5),
+      middle: isFingerExtended(12, 11, 10, 9),
+      ring: isFingerExtended(16, 15, 14, 13),
+      pinky: isFingerExtended(20, 19, 18, 17),
+      thumb: isThumbExtended(),
+      indexFold: isFingerFolded(8, 5),
+      middleFold: isFingerFolded(12, 9),
+      ringFold: isFingerFolded(16, 13),
+      pinkyFold: isFingerFolded(20, 17)
     };
   };
 
@@ -54,29 +61,17 @@ export const checkGesture = (landmarksList: any[][], gestureType: string): boole
 
   switch (gestureType) {
     case 'OPEN_HAND':
-      return hands.some(h => {
-        const extCount = [h.indexExt, h.middleExt, h.ringExt, h.pinkyExt].filter(v => v).length;
-        return extCount >= 3 && h.thumbExt; // At least 3 fingers + thumb
-      });
+      return hands.some(h => h.index && h.middle && h.ring && h.pinky && h.thumb);
 
     case 'FIST':
-      return hands.some(h => {
-        const foldCount = [h.indexFold, h.middleFold, h.ringFold, h.pinkyFold].filter(v => v).length;
-        const extCount = [h.indexExt, h.middleExt, h.ringExt, h.pinkyExt].filter(v => v).length;
-        return foldCount >= 3 && extCount === 0;
-      });
+      return hands.some(h => h.indexFold && h.middleFold && h.ringFold && h.pinkyFold);
 
     case 'V_SIGN':
-      return hands.some(h => 
-        h.indexExt && h.middleExt && !h.ringExt && !h.pinkyExt && h.ringFold && h.pinkyFold
-      );
+      return hands.some(h => h.index && h.middle && h.ringFold && h.pinkyFold);
 
     case 'TWO_HANDS_OPEN':
       if (hands.length < 2) return false;
-      return hands.every(h => {
-        const extCount = [h.indexExt, h.middleExt, h.ringExt, h.pinkyExt, h.thumbExt].filter(v => v).length;
-        return extCount >= 4;
-      });
+      return hands.every(h => h.index && h.middle && h.ring && h.pinky && h.thumb);
 
     default:
       return false;
