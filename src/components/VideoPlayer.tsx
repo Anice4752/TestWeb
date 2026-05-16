@@ -9,12 +9,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson }) => {
   return (
     <div className="card">
       <div className="card-header">
-        <h3>โ–ถ วิดีโอสาธิต: {lesson.title}</h3>
+        <h3>วิดีโอสาธิต: {lesson.title}</h3>
       </div>
       <div className="card-body">
         <div className="media-wrapper">
           <video 
-            key={lesson.id} 
             src={lesson.videoUrl} 
             controls 
             autoPlay 
@@ -23,8 +22,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson }) => {
           />
         </div>
         <div className="instruction-panel">
-          <p>โŸ’ก คำแนะนำ: สังเกตการวางนิ้วและเลียนแบบท่าทางในวิดีโอให้ใกล้เคียงที่สุด</p>
+          <p>คำแนะนำ: สังเกตการวางนิ้วและเลียนแบบท่าทางในวิดีโอให้ใกล้เคียงที่สุด</p>
         </div>
+      </div>
       </div>
     </div>
   );
