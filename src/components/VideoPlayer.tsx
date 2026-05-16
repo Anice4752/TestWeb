@@ -25,7 +25,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson }) => {
           <p>คำแนะนำ: สังเกตการวางนิ้วและเลียนแบบท่าทางในวิดีโอให้ใกล้เคียงที่สุด</p>
         </div>
       </div>
-      </div>
     </div>
   );
 };
