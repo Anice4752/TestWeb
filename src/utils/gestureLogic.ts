@@ -19,7 +19,7 @@ export const checkGesture = (landmarksList: any[][], gestureType: string): boole
     const wrist = hand[0];
     
     // Improved finger check: Uses both distance and joint angles (more resilient to speed/blur)
-    const isFingerExtended = (tip: number, dip: number, pip: number, mcp: number) => {
+    const isFingerExtended = (tip: number, pip: number, mcp: number) => {
       const angle = getAngle(hand[tip], hand[pip], hand[mcp]);
       const distTipWrist = getDist(hand[tip], wrist);
       const distMcpWrist = getDist(hand[mcp], wrist);
@@ -49,10 +49,10 @@ export const checkGesture = (landmarksList: any[][], gestureType: string): boole
     };
 
     return {
-      index: isFingerExtended(8, 7, 6, 5),
-      middle: isFingerExtended(12, 11, 10, 9),
-      ring: isFingerExtended(16, 15, 14, 13),
-      pinky: isFingerExtended(20, 19, 18, 17),
+      index: isFingerExtended(8, 6, 5),
+      middle: isFingerExtended(12, 10, 9),
+      ring: isFingerExtended(16, 14, 13),
+      pinky: isFingerExtended(20, 18, 17),
       thumb: isThumbExtended(),
       indexFold: isFingerFolded(8, 5),
       middleFold: isFingerFolded(12, 9),
