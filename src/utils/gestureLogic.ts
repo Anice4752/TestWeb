@@ -5,43 +5,47 @@ export const checkGesture = (landmarksList: any[][], gestureType: string): boole
     return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2) + Math.pow(p1.z - p2.z, 2));
   };
 
+  // Calculate angle between three points
+  const getAngle = (p1: any, p2: any, p3: any) => {
+    const v1 = { x: p1.x - p2.x, y: p1.y - p2.y, z: p1.z - p2.z };
+    const v2 = { x: p3.x - p2.x, y: p3.y - p2.y, z: p3.z - p2.z };
+    const dot = v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+    const mag1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y + v1.z * v1.z);
+    const mag2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y + v2.z * v2.z);
+    return Math.acos(dot / (mag1 * mag2)) * (180 / Math.PI);
+  };
+
   const getHandInfo = (hand: any[]) => {
     const wrist = hand[0];
     
-    // Check extension for each finger using its 4 landmarks
-    // Tip (8/12/16/20), PIP (6/10/14/18), MCP (5/9/13/17)
-    const isFingerExtended = (tipIdx: number, dipIdx: number, pipIdx: number, mcpIdx: number) => {
-      const tipDist = getDist(hand[tipIdx], wrist);
-      const dipDist = getDist(hand[dipIdx], wrist);
-      const pipDist = getDist(hand[pipIdx], wrist);
-      const mcpDist = getDist(hand[mcpIdx], wrist);
+    // Improved finger check: Uses both distance and joint angles (more resilient to speed/blur)
+    const isFingerExtended = (tip: number, dip: number, pip: number, mcp: number) => {
+      const angle = getAngle(hand[tip], hand[pip], hand[mcp]);
+      const distTipWrist = getDist(hand[tip], wrist);
+      const distMcpWrist = getDist(hand[mcp], wrist);
       
-      // Strict sequence: Tip must be furthest, followed by DIP, PIP, and MCP
-      return tipDist > dipDist && dipDist > pipDist && pipDist > mcpDist;
+      // Extension: Angle should be close to 180 degrees, and tip must be far from wrist
+      return angle > 150 && distTipWrist > distMcpWrist * 1.2;
     };
 
-    const isFingerFolded = (tipIdx: number, mcpIdx: number) => {
-      const tipDist = getDist(hand[tipIdx], wrist);
-      const mcpDist = getDist(hand[mcpIdx], wrist);
-      // Tip is significantly closer to the wrist than the base of the finger
-      return tipDist < mcpDist * 0.9;
+    const isFingerFolded = (tip: number, mcp: number) => {
+      const distTipWrist = getDist(hand[tip], wrist);
+      const distMcpWrist = getDist(hand[mcp], wrist);
+      // Folded: Tip is tucked towards or past the base
+      return distTipWrist < distMcpWrist * 1.05;
     };
 
     const isThumbExtended = () => {
       const tip = hand[4];
-      const ip = hand[3];
       const mcp = hand[2];
-      const cmc = hand[1];
+      const indexMcp = hand[5];
       
-      const tipDist = getDist(tip, wrist);
-      const ipDist = getDist(ip, wrist);
-      const mcpDist = getDist(mcp, wrist);
+      const angle = getAngle(tip, hand[3], mcp);
+      const spread = getDist(tip, indexMcp);
+      const distTipWrist = getDist(tip, wrist);
       
-      // Horizontal spread check (relative to index finger base)
-      const indexBase = hand[5];
-      const spread = getDist(tip, indexBase);
-      
-      return (tipDist > ipDist && ipDist > mcpDist && mcpDist > getDist(cmc, wrist)) || spread > 0.12;
+      // Thumb is tricky: needs angle or significant spread
+      return angle > 155 || spread > 0.13 || distTipWrist > getDist(mcp, wrist) * 1.3;
     };
 
     return {
@@ -67,7 +71,8 @@ export const checkGesture = (landmarksList: any[][], gestureType: string): boole
       return hands.some(h => h.indexFold && h.middleFold && h.ringFold && h.pinkyFold);
 
     case 'V_SIGN':
-      return hands.some(h => h.index && h.middle && h.ringFold && h.pinkyFold);
+      // V-sign: specific check for index and middle extended, others tightly folded
+      return hands.some(h => h.index && h.middle && h.ringFold && h.pinkyFold && !h.ring && !h.pinky);
 
     case 'TWO_HANDS_OPEN':
       if (hands.length < 2) return false;
