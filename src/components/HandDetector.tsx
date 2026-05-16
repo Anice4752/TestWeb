@@ -27,6 +27,7 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
   });
 
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const isCameraActiveRef = useRef(false);
   const streamRef = useRef<MediaStream | null>(null);
 
   const targetGestureRef = useRef(targetGesture);
@@ -39,7 +40,7 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
   }, [targetGesture]);
 
   const toggleCamera = async () => {
-    if (isCameraActive) {
+    if (isCameraActiveRef.current) {
       stopCamera();
     } else {
       await startCamera();
@@ -58,6 +59,7 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.onloadeddata = () => {
+          isCameraActiveRef.current = true;
           setIsCameraActive(true);
           predictWebcam();
         };
@@ -69,6 +71,8 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
   };
 
   const stopCamera = () => {
+    isCameraActiveRef.current = false;
+    setIsCameraActive(false);
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -83,7 +87,6 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
     if (ctx && canvasRef.current) {
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     }
-    setIsCameraActive(false);
     setDetectedHands({ left: false, right: false });
   };
 
@@ -100,9 +103,9 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
           },
           runningMode: "VIDEO",
           numHands: 2,
-          minHandDetectionConfidence: 0.5,
-          minHandPresenceConfidence: 0.5,
-          minTrackingConfidence: 0.5
+          minHandDetectionConfidence: 0.3,
+          minHandPresenceConfidence: 0.3,
+          minTrackingConfidence: 0.3
         });
         setIsLoading(false);
       } catch (err) {
@@ -120,7 +123,7 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
   }, []);
 
   const predictWebcam = async () => {
-    if (!videoRef.current || !canvasRef.current || !handLandmarkerRef.current || !isCameraActive) return;
+    if (!videoRef.current || !canvasRef.current || !handLandmarkerRef.current || !isCameraActiveRef.current) return;
 
     try {
       if (videoRef.current.readyState >= 2) {
@@ -155,7 +158,7 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
               
               if (isGestureCorrect) {
                 stabilityCounter.current += 1;
-                if (stabilityCounter.current >= 8 && !isCorrect) {
+                if (stabilityCounter.current >= 6 && !isCorrect) {
                   triggerCorrect();
                 }
               } else {
@@ -172,7 +175,7 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
       console.error("Prediction error:", err);
     }
 
-    if (isCameraActive) {
+    if (isCameraActiveRef.current) {
       requestRef.current = requestAnimationFrame(predictWebcam);
     }
   };
@@ -227,7 +230,7 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
   return (
     <div className="card">
       <div className="card-header">
-        <h3>โŸ“ท กล้องตรวจจับอัจฉริยะ</h3>
+        <h3>กล้องตรวจจับอัจฉริยะ</h3>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <div className="confidence-meter" style={{ 
             height: '6px', 
@@ -239,7 +242,7 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
           }}>
             <div style={{ 
               height: '100%', 
-              width: `${(stabilityCounter.current / 8) * 100}%`, 
+              width: `${(stabilityCounter.current / 6) * 100}%`, 
               background: '#10b981',
               transition: 'width 0.2s ease-out'
             }}></div>
@@ -258,14 +261,14 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
           )}
           {error && (
             <div className="loading-overlay" style={{ color: '#ef4444', textAlign: 'center', padding: '1.5rem' }}>
-              <p>โŸธ  {error}</p>
+              <p>{error}</p>
             </div>
           )}
           <video ref={videoRef} autoPlay playsInline muted style={{ display: error ? 'none' : 'block' }} />
           <canvas ref={canvasRef} width="640" height="480" />
           {isCorrect && (
             <div className="feedback-overlay">
-              <div className="feedback-badge">ทำถูกแล้ว! โŸŽ‰</div>
+              <div className="feedback-badge">ทำถูกแล้ว!</div>
             </div>
           )}
         </div>
@@ -284,9 +287,9 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
               gap: '0.5rem'
             }}
           >
-            {isCameraActive ? 'โŸ›‘ ปิดกล้อง' : 'โŸ“ท เปิดกล้อง'}
+            {isCameraActive ? 'ปิดกล้อง' : 'เปิดกล้อง'}
           </button>
-          <p style={{ color: '#166534', margin: 0 }}>โŸ–ข เคล็ดลับ: สำหรับมือแนวนอน ให้พยายามแบฝ่ามือเข้าหาหน้ากล้องตรงๆ ก่อนเพื่อให้ AI ล็อกตำแหน่งได้แม่นยำขึ้น</p>
+          <p style={{ color: '#166534', margin: 0 }}>เคล็ดลับ: สำหรับมือแนวนอน ให้พยายามแบฝ่ามือเข้าหาหน้ากล้องตรงๆ ก่อนเพื่อให้ AI ล็อกตำแหน่งได้แม่นยำขึ้น</p>
         </div>
       </div>
     </div>
