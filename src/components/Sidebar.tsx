@@ -12,7 +12,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeLesson, onSelectLesson }) => {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <h2>โŸ—  <span>SignLearn AI</span></h2>
+        <h2><span>SignLearn AI</span></h2>
       </div>
       <div className="lesson-list">
         {categories.map((cat) => (
