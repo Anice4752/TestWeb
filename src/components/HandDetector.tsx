@@ -139,6 +139,9 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
 
           if (results.landmarks && results.landmarks.length > 0) {
             results.handedness.forEach((h: any) => {
+              // MediaPipe's 'Left' hand is actually the physical left hand.
+              // In a mirrored view, the physical left hand appears on the right side.
+              // We keep the logic but the user's perception is now fixed by scaleX(-1).
               if (h[0].categoryName === 'Left') presence.left = true;
               if (h[0].categoryName === 'Right') presence.right = true;
             });
