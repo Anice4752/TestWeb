@@ -16,7 +16,7 @@ export const checkGesture = (landmarksList: any[][], gestureType: string): boole
       return tipDist > pipDist * 1.15 && tipDist > mcpDist * 1.3; 
     };
 
-    const isFolded = (tipIdx: number, pipIdx: number, mcpIdx: number) => {
+    const isFolded = (tipIdx: number, mcpIdx: number) => {
       const tipDist = getDist(hand[tipIdx], wrist);
       const mcpDist = getDist(hand[mcpIdx], wrist);
       return tipDist < mcpDist * 1.1; // Tip is close to or inside the palm area
@@ -24,7 +24,6 @@ export const checkGesture = (landmarksList: any[][], gestureType: string): boole
 
     const isThumbExtended = () => {
       const thumbTip = hand[4];
-      const thumbIp = hand[3];
       const thumbMcp = hand[2];
       const indexMcp = hand[5];
       
@@ -43,10 +42,10 @@ export const checkGesture = (landmarksList: any[][], gestureType: string): boole
       middleExt: isExtended(12, 10, 9),
       ringExt: isExtended(16, 14, 13),
       pinkyExt: isExtended(20, 18, 17),
-      indexFold: isFolded(8, 6, 5),
-      middleFold: isFolded(12, 10, 9),
-      ringFold: isFolded(16, 14, 13),
-      pinkyFold: isFolded(20, 18, 17),
+      indexFold: isFolded(8, 5),
+      middleFold: isFolded(12, 9),
+      ringFold: isFolded(16, 13),
+      pinkyFold: isFolded(20, 17),
       thumbExt: isThumbExtended()
     };
   };
