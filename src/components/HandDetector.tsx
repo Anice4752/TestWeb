@@ -26,6 +26,9 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
     lastQuadrant: -1,
   });
 
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const streamRef = useRef<MediaStream | null>(null);
+
   const targetGestureRef = useRef(targetGesture);
 
   useEffect(() => {
@@ -34,6 +37,55 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
     motionState.current = { rotations: 0, lastQuadrant: -1 };
     stabilityCounter.current = 0;
   }, [targetGesture]);
+
+  const toggleCamera = async () => {
+    if (isCameraActive) {
+      stopCamera();
+    } else {
+      await startCamera();
+    }
+  };
+
+  const startCamera = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Browser does not support camera access");
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480 },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadeddata = () => {
+          setIsCameraActive(true);
+          predictWebcam();
+        };
+      }
+    } catch (err) {
+      console.error("Camera access error:", err);
+      setError("ไม่สามารถเข้าถึงกล้องได้ กรุณาอนุญาตการเข้าถึงกล้อง");
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    if (requestRef.current) {
+      cancelAnimationFrame(requestRef.current);
+    }
+    const ctx = canvasRef.current?.getContext('2d');
+    if (ctx && canvasRef.current) {
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    }
+    setIsCameraActive(false);
+    setDetectedHands({ left: false, right: false });
+  };
 
   useEffect(() => {
     const initMediaPipe = async () => {
@@ -52,7 +104,6 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
           minHandPresenceConfidence: 0.5,
           minTrackingConfidence: 0.5
         });
-        await startCamera();
         setIsLoading(false);
       } catch (err) {
         console.error("Failed to initialize MediaPipe:", err);
@@ -61,38 +112,15 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
       }
     };
 
-    const startCamera = async () => {
-      try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          throw new Error("Browser does not support camera access");
-        }
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480 },
-        });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.onloadeddata = () => {
-            predictWebcam();
-          };
-        }
-      } catch (err) {
-        console.error("Camera access error:", err);
-        setError("ไม่สามารถเข้าถึงกล้องได้ กรุณาอนุญาตการเข้าถึงกล้อง");
-      }
-    };
-
     initMediaPipe();
 
     return () => {
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
-      if (videoRef.current && videoRef.current.srcObject) {
-        (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
-      }
+      stopCamera();
     };
   }, []);
 
   const predictWebcam = async () => {
-    if (!videoRef.current || !canvasRef.current || !handLandmarkerRef.current) return;
+    if (!videoRef.current || !canvasRef.current || !handLandmarkerRef.current || !isCameraActive) return;
 
     try {
       if (videoRef.current.readyState >= 2) {
@@ -144,7 +172,9 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
       console.error("Prediction error:", err);
     }
 
-    requestRef.current = requestAnimationFrame(predictWebcam);
+    if (isCameraActive) {
+      requestRef.current = requestAnimationFrame(predictWebcam);
+    }
   };
 
   const handleMotionGesture = (results: any) => {
@@ -239,8 +269,24 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
             </div>
           )}
         </div>
-        <div className="instruction-panel" style={{ background: '#f0fdf4', borderColor: '#22c55e' }}>
-          <p style={{ color: '#166534' }}>โŸ–ข เคล็ดลับ: สำหรับมือแนวนอน ให้พยายามแบฝ่ามือเข้าหาหน้ากล้องตรงๆ ก่อนเพื่อให้ AI ล็อกตำแหน่งได้แม่นยำขึ้น</p>
+        <div className="instruction-panel" style={{ background: '#f0fdf4', borderColor: '#22c55e', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <button 
+            onClick={toggleCamera}
+            className={`btn ${isCameraActive ? 'btn-danger' : 'btn-success'}`}
+            style={{ 
+              width: '100%', 
+              padding: '0.8rem', 
+              fontSize: '1rem', 
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            {isCameraActive ? 'โŸ›‘ ปิดกล้อง' : 'โŸ“ท เปิดกล้อง'}
+          </button>
+          <p style={{ color: '#166534', margin: 0 }}>โŸ–ข เคล็ดลับ: สำหรับมือแนวนอน ให้พยายามแบฝ่ามือเข้าหาหน้ากล้องตรงๆ ก่อนเพื่อให้ AI ล็อกตำแหน่งได้แม่นยำขึ้น</p>
         </div>
       </div>
     </div>
