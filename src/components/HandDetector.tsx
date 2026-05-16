@@ -48,9 +48,9 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
           },
           runningMode: "VIDEO",
           numHands: 2,
-          minHandDetectionConfidence: 0.1,
-          minHandPresenceConfidence: 0.1,
-          minTrackingConfidence: 0.1
+          minHandDetectionConfidence: 0.5,
+          minHandPresenceConfidence: 0.5,
+          minTrackingConfidence: 0.5
         });
         await startCamera();
         setIsLoading(false);
@@ -198,7 +198,22 @@ const HandDetector: React.FC<HandDetectorProps> = ({ targetGesture, onCorrect })
     <div className="card">
       <div className="card-header">
         <h3>โŸ“ท กล้องตรวจจับอัจฉริยะ</h3>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <div className="confidence-meter" style={{ 
+            height: '6px', 
+            width: '60px', 
+            background: '#e2e8f0', 
+            borderRadius: '3px',
+            overflow: 'hidden',
+            marginRight: '8px'
+          }}>
+            <div style={{ 
+              height: '100%', 
+              width: `${(stabilityCounter.current / 8) * 100}%`, 
+              background: '#10b981',
+              transition: 'width 0.2s ease-out'
+            }}></div>
+          </div>
           <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '10px', background: detectedHands.left ? '#10b981' : '#e2e8f0', color: 'white', transition: 'background 0.3s' }}>ซ้าย</span>
           <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '10px', background: detectedHands.right ? '#10b981' : '#e2e8f0', color: 'white', transition: 'background 0.3s' }}>ขวา</span>
         </div>
